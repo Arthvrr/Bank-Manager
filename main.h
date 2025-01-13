@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 /*
 accounts = liste contenant tout les montant de chaque compte
@@ -22,7 +23,6 @@ typedef struct {
 // Variables globales
 extern BankAccount *accounts; //pointeur vers le tableau des comptes bancaires
 extern int num_accounts; //nombre total de comptes bancaires
-extern int num_clients; //nombre total de clients
 
 
 void open_account(int account_id);

@@ -5,7 +5,7 @@ TARGET = banque
 
 # Cible par défaut : créer et exécuter l'exécutable
 all: $(TARGET)
-	./$(TARGET) $(A) $(C)
+	./$(TARGET) $(A)
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
