@@ -13,8 +13,6 @@ void open_account(int account_id){
 
     accounts[account_id].amount = 0.0;  //solde initial du compte
     pthread_mutex_init(&accounts[account_id].mutex_account, NULL);  //initialiser le mutex
-
-    //printf
     printf("Compte créé avec l'ID %d. Solde initial: %.2f\n", account_id, accounts[account_id].amount);
 }
 
@@ -23,7 +21,7 @@ float get_amount(int account_id){
     //si id du compte incorrect
     if (account_id < 0 || account_id >= num_accounts) {
         fprintf(stderr, "Erreur : ID de compte invalide (%d).\n", account_id);
-        return -1.0; // Retourner une valeur négative pour indiquer une erreur
+        return -1.0; //retourne une valeur négative pour indiquer une erreur
     }
 
     pthread_mutex_lock(&accounts[account_id].mutex_account);
@@ -74,7 +72,7 @@ void withdraw(int account_id, float amount){
     //si montant de retrait voulu est supérieur au montant disponible
     if (accounts[account_id].amount < amount){
         fprintf(stderr, "Solde Insuffisant.\n");
-        pthread_mutex_unlock(&accounts[account_id].mutex_account);
+        pthread_mutex_unlock(&accounts[account_id].mutex_account); //on libère le mutex pour éviter le deadlock
         return;
     }
     accounts[account_id].amount -= amount;
@@ -102,6 +100,12 @@ void make_transfer(int account_src,float amount, int account_dest){
         return;
     }
 
+    //si compte src = compte dest
+    if (account_src == account_dest) {
+        fprintf(stderr, "Erreur : Transfert impossible, même compte source et destination.\n");
+        return;
+    }
+
     printf("Tentative de virement de %.2f effectué du compte %d vers le compte %d.\n", amount, account_src,account_dest);
     pthread_mutex_lock(&accounts[account_src].mutex_account); //on lock les 2 mutex des 2 comptes
     pthread_mutex_lock(&accounts[account_dest].mutex_account);
@@ -124,6 +128,30 @@ void make_transfer(int account_src,float amount, int account_dest){
 
 //fonction simulant un client créant un compte et effectuant un dépot + retrait aléatoire
 void *client_thread(void *arg) {
+    int client_id = *(int *)arg;
+    int operations = 1 + rand() % 10; //nombre aléatoire d'opérations (1 à 10)
+    for (int i = 0; i < operations; i++) {
+        int operation = rand() % 4; //choisir aléatoirement une opération (0 à 3)
+        float random_amount = (rand() % 10000) / 100.0; //générer un montant aléatoire
+        int random_account = rand() % num_accounts; //choisir un compte aléatoire
+
+        switch (operation) {
+            case 0:
+                get_amount(client_id);
+                break;
+            case 1:
+                deposit(client_id, random_amount);
+                break;
+            case 2:
+                withdraw(client_id, random_amount);
+                break;
+            case 3:
+                make_transfer(client_id, random_amount, random_account);
+                break;
+            default:
+                fprintf(stderr, "Opération inconnue.\n");
+        }
+    }
     return NULL;
 }
 
@@ -139,12 +167,11 @@ int main(int argc, char* argv[]){
     num_accounts = atoi(argv[1]);  //nombre de comptes
 
     if (num_accounts <= 0){
-        fprintf(stderr,"Le nombre de compte doit être positif !\n");
+        fprintf(stderr,"Le nombre de clients doit être positif !\n");
         return 1;
     }
 
-    
-
+    //allocation de mémoire
     accounts = (BankAccount *)malloc(num_accounts * sizeof(BankAccount));
     if (accounts == NULL) {
         fprintf(stderr, "Erreur : Allocation mémoire pour les comptes échouée.\n");
@@ -152,45 +179,22 @@ int main(int argc, char* argv[]){
     }
 
     srand(time(NULL));
+    pthread_t threads[num_accounts];
+    int client_ids[num_accounts];
 
-    //création de tout les comptes
+    //crée les différents threads et crée les comptes
     for (int i = 0; i < num_accounts; i++) {
         open_account(i);
-        //get_amount(i);
-        for (int j = 0; j < 3;j++){
-            int operation = rand() % 4; //choisir une opération aléatoire : 0 = get_amount, 1 = deposit, 2 = withdraw, 3 = make_transfer
-            float random_amount = (rand() % 10000) / 100.0; //générer un montant aléatoire entre 0.00 et 100.00
-            int random_account = rand() % num_accounts;
-
-            //tant que random_account est égal à i (même compte), on reprend un nombre au hasard
-            while (random_account == i){
-                random_account = rand() % num_accounts;
-            }
-
-            switch (operation) {
-                case 0:
-                    get_amount(i);
-                    break;
-                case 1:
-                    deposit(i, random_amount);
-                    break;
-                case 2:
-                    withdraw(i, random_amount);
-                    break;
-                case 3:
-                    make_transfer(i,random_amount,random_account);
-                    break;
-                default:
-                    fprintf(stderr, "Opération inconnue.\n");
-            }
-
+        client_ids[i] = i;
+        if (pthread_create(&threads[i], NULL, client_thread, &client_ids[i]) != 0) {
+            fprintf(stderr, "Erreur lors de la création du thread %d.\n", i);
         }
     }
 
-    //faire des mouvements au hasard parmi les 4 fonctions
-    //chaque client effectue 5 actions différentes
-
-
+    //attendre que les threads finissent leur job
+    for (int i = 0; i < num_accounts; i++) {
+        pthread_join(threads[i], NULL);
+    }
 
 
     //libérer les ressources
