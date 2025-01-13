@@ -3,10 +3,14 @@ CFLAGS = -w -pthread -I include
 SRC = main.c
 TARGET = banque
 
-# Cible par défaut : créer et exécuter l'exécutable
+# Cible par défaut : compiler
 all: $(TARGET)
-	./$(TARGET) $(A)
 
+# Cible pour exécuter avec un argument spécifique
+run-%: $(TARGET)
+	./$(TARGET) $*
+
+# Compilation
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
 

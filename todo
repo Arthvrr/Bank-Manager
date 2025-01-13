@@ -1,0 +1,6 @@
+- ajout de taux d'intérêts sur les comptes
+- faire un suivi des transactions avec une struct Transactions
+- autoriser des comptes à découvert
+- blocage de comptes
+- différentes devises
+- gestion d'achats d'actions

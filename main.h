@@ -20,9 +20,10 @@ typedef struct {
     pthread_mutex_t mutex_account;
 } BankAccount;
 
-// Variables globales
-extern BankAccount *accounts; //pointeur vers le tableau des comptes bancaires
+//variables globales
+int transactions_num; //nombre de transactions effectuées
 extern int num_accounts; //nombre total de comptes bancaires
+extern BankAccount *accounts; //pointeur vers le tableau des comptes bancaires
 
 
 void open_account(int account_id);

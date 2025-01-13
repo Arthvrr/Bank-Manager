@@ -1,5 +1,6 @@
 #include "main.h"
 
+int transactions_num = 0;
 int num_accounts = 0;
 BankAccount *accounts = NULL; //liste des comptes avec leur montant
 
@@ -28,8 +29,8 @@ float get_amount(int account_id){
     float balance = accounts[account_id].amount;
     pthread_mutex_unlock(&accounts[account_id].mutex_account);
     printf("Affichage du montant du compte numéro %d: %.2f\n", account_id, balance);
+    transactions_num++;
     return balance;
-        
 }
 
 void deposit(int account_id, float amount){
@@ -49,6 +50,7 @@ void deposit(int account_id, float amount){
     pthread_mutex_lock(&accounts[account_id].mutex_account);
     accounts[account_id].amount += amount;
     printf("Dépôt de %.2f effectué sur le compte %d. Nouveau solde: %.2f\n", amount, account_id, accounts[account_id].amount);
+    transactions_num++;
     pthread_mutex_unlock(&accounts[account_id].mutex_account);
 }
 
@@ -77,6 +79,7 @@ void withdraw(int account_id, float amount){
     }
     accounts[account_id].amount -= amount;
     printf("Retrait de %.2f effectué sur le compte %d. Nouveau solde: %.2f\n", amount, account_id, accounts[account_id].amount);
+    transactions_num++;
     pthread_mutex_unlock(&accounts[account_id].mutex_account);
 }
 
@@ -121,6 +124,7 @@ void make_transfer(int account_src,float amount, int account_dest){
     accounts[account_src].amount -= amount;
     accounts[account_dest].amount += amount;
     printf("Virement de %.2f effectué sur le compte %d vers le compte %d.\n", amount, account_src, account_dest);
+    transactions_num++;
     pthread_mutex_unlock(&accounts[account_src].mutex_account);
     pthread_mutex_unlock(&accounts[account_dest].mutex_account);
 }
@@ -195,6 +199,8 @@ int main(int argc, char* argv[]){
     for (int i = 0; i < num_accounts; i++) {
         pthread_join(threads[i], NULL);
     }
+
+    printf("Nombre de transactions totales : %d\n",transactions_num);
 
 
     //libérer les ressources
